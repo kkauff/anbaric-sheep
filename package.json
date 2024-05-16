@@ -8,8 +8,8 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "predeploy": "npm run build -- --prod --baseHref=/anbaric-sheep/",
-    "deploy": "gh-pages -d dist/anbaric-sheep"
+    "predeploy": "npm run build --baseHref=/anbaric-sheep/",
+    "deploy": "gh-pages -d dist/"
   },
   "dependencies": {
     "@visx/visx": "^3.10.2",
