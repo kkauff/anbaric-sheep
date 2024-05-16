@@ -26,16 +26,16 @@ function App() {
         const { updatedBots, updatedCount } = runStepChange(
           new BoidModel(
             40,
-            0.2,
+            // 0.2,
             8,
             0.0005,
             0.05,
-            0.05,
-            6,
-            3,
-            0.01,
-            0.00004,
-            0.001
+            0.05
+            // 6,
+            // 3,
+            // 0.01,
+            // 0.00004,
+            // 0.001
           ),
           bots,
           count

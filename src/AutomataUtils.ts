@@ -19,41 +19,41 @@ export class IdentityModel implements Model {
 
 export class BoidModel implements Model {
   private visualRange: number;
-  private turnFactor: number;
+  // private turnFactor: number;
   private protectedRange: number;
   private centeringFactor: number;
   private avoidFactor: number;
   private matchingFactor: number;
-  private maxSpeed: number;
-  private minSpeed: number;
-  private maxBias: number;
-  private biasIncrement: number;
-  private defaultBiasVal: number;
+  // private maxSpeed: number;
+  // private minSpeed: number;
+  // private maxBias: number;
+  // private biasIncrement: number;
+  // private defaultBiasVal: number;
 
   constructor(
     visualRange: number,
-    turnFactor: number,
+    // turnFactor: number,
     protectedRange: number,
     centeringFactor: number,
     avoidFactor: number,
-    matchingFactor: number,
-    maxSpeed: number,
-    minSpeed: number,
-    maxBias: number,
-    biasIncrement: number,
-    defaultBiasVal: number
+    matchingFactor: number
+    // maxSpeed: number,
+    // minSpeed: number,
+    // maxBias: number,
+    // biasIncrement: number,
+    // defaultBiasVal: number
   ) {
     this.visualRange = visualRange;
-    this.turnFactor = turnFactor;
+    // this.turnFactor = turnFactor;
     this.protectedRange = protectedRange;
     this.centeringFactor = centeringFactor;
     this.avoidFactor = avoidFactor;
     this.matchingFactor = matchingFactor;
-    this.maxSpeed = maxSpeed;
-    this.minSpeed = minSpeed;
-    this.maxBias = maxBias;
-    this.biasIncrement = biasIncrement;
-    this.defaultBiasVal = defaultBiasVal;
+    // this.maxSpeed = maxSpeed;
+    // this.minSpeed = minSpeed;
+    // this.maxBias = maxBias;
+    // this.biasIncrement = biasIncrement;
+    // this.defaultBiasVal = defaultBiasVal;
   }
 
   update(bots: Bot[]): Bot[] {
