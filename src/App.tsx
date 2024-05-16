@@ -80,6 +80,9 @@ function App() {
         </a>
       </div>
       <h1>Boids</h1>
+      <p>
+        https://vanhunteradams.com/Pico/Animal_Movement/Boids-algorithm.html#Algorithm-Overview
+      </p>
       <div className="card">
         <label htmlFor="stepsInput">Steps per second:</label>
         <input
