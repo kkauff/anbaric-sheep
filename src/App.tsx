@@ -18,6 +18,10 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [stepsPerSecond, setStepsPerSecond] = useState(1);
 
+  const MIN = -100;
+  const MAX = 100;
+  const SCALE = 400;
+
   useEffect(() => {
     let timeoutId: number;
 
@@ -30,12 +34,16 @@ function App() {
             8,
             0.0005,
             0.05,
-            0.05
+            0.05,
             // 6,
             // 3,
             // 0.01,
             // 0.00004,
             // 0.001
+            MIN,
+            MIN,
+            MAX,
+            MAX
           ),
           bots,
           count
@@ -59,14 +67,13 @@ function App() {
     setIsRunning((prevIsRunning) => !prevIsRunning);
   };
 
-  // Define scales for x and y positions
   const xScale = scaleLinear({
-    domain: [-100, 100], // Adjust as needed
-    range: [0, 400], // Adjust as needed
+    domain: [MIN, MAX],
+    range: [0, SCALE],
   });
   const yScale = scaleLinear({
-    domain: [-100, 100], // Adjust as needed
-    range: [400, 0], // Adjust as needed
+    domain: [MIN, MAX],
+    range: [SCALE, 0],
   });
 
   return (
@@ -97,21 +104,21 @@ function App() {
         </button>
       </div>
       {/* Bot positions visualization */}
-      <svg width={400} height={400}>
+      <svg width={SCALE} height={SCALE}>
         {/* Horizontal boundaries */}
         <line
-          x1={xScale(-100)}
-          x2={xScale(100)}
-          y1={yScale(-100)}
-          y2={yScale(-100)}
+          x1={xScale(MIN)}
+          x2={xScale(MAX)}
+          y1={yScale(MIN)}
+          y2={yScale(MIN)}
           stroke="gray"
           strokeWidth={2}
         />
         <line
-          x1={xScale(-100)}
-          x2={xScale(100)}
-          y1={yScale(100)}
-          y2={yScale(100)}
+          x1={xScale(MIN)}
+          x2={xScale(MAX)}
+          y1={yScale(MAX)}
+          y2={yScale(MAX)}
           stroke="gray"
           strokeWidth={2}
         />

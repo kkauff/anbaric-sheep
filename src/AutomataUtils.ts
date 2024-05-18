@@ -29,6 +29,10 @@ export class BoidModel implements Model {
   // private maxBias: number;
   // private biasIncrement: number;
   // private defaultBiasVal: number;
+  private xMin: number;
+  private yMin: number;
+  private xMax: number;
+  private yMax: number;
 
   constructor(
     visualRange: number,
@@ -36,12 +40,16 @@ export class BoidModel implements Model {
     protectedRange: number,
     centeringFactor: number,
     avoidFactor: number,
-    matchingFactor: number
+    matchingFactor: number,
     // maxSpeed: number,
     // minSpeed: number,
     // maxBias: number,
     // biasIncrement: number,
     // defaultBiasVal: number
+    xMin: number,
+    yMin: number,
+    xMax: number,
+    yMax: number
   ) {
     this.visualRange = visualRange;
     // this.turnFactor = turnFactor;
@@ -54,6 +62,10 @@ export class BoidModel implements Model {
     // this.maxBias = maxBias;
     // this.biasIncrement = biasIncrement;
     // this.defaultBiasVal = defaultBiasVal;
+    this.xMin = xMin;
+    this.yMin = yMin;
+    this.xMax = xMax;
+    this.yMax = yMax;
   }
 
   update(bots: Bot[]): Bot[] {
@@ -107,15 +119,26 @@ export class BoidModel implements Model {
       boid.xVel += closeDx * this.avoidFactor;
       boid.yVel += closeDy * this.avoidFactor;
 
-      // Boundary handling (adjust velocities based on margins)
-
-      // Bias handling (based on scout group)
-
-      // Speed control (minSpeed and maxSpeed enforcement)
-
       // Update position
       boid.xPos += boid.xVel;
       boid.yPos += boid.yVel;
+
+      // Boundary handling
+      if (boid.xPos < this.xMin) {
+        boid.xPos = this.xMin;
+        boid.xVel = -boid.xVel; // Reflect velocity
+      } else if (boid.xPos > this.xMax) {
+        boid.xPos = this.xMax;
+        boid.xVel = -boid.xVel; // Reflect velocity
+      }
+
+      if (boid.yPos < this.yMin) {
+        boid.yPos = this.yMin;
+        boid.yVel = -boid.yVel; // Reflect velocity
+      } else if (boid.yPos > this.yMax) {
+        boid.yPos = this.yMax;
+        boid.yVel = -boid.yVel; // Reflect velocity
+      }
 
       return boid;
     });
