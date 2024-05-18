@@ -1,27 +1,43 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}
+
 .container {
   display: grid;
-  grid-template-rows: auto 1fr auto; /* Header, Content, and Table */
+  grid-template-rows: auto 1fr auto; /* Adjust the grid setup if necessary */
   height: 100vh;
   width: 100vw;
+  overflow: hidden; // Prevents the container from causing the page to scroll
 }
 
 .header {
   background-color: var(--bg-color);
   color: var(--text-color);
   z-index: 1; /* Keeps the header on top */
+  max-height: 10vh; // Limit the header size if it's too large
 }
 
 .grid-container {
-  overflow: hidden; /* Prevents any overflow from the SVG */
+  overflow: auto; // Enables scrolling within the SVG container if overflow occurs
 }
 
 .position-table {
   background-color: var(--bg-color);
   color: var(--text-color);
   display: none; /* Initially hidden */
+  max-height: 10vh; // Limit the table size
 }
 
-/* CSS for showing the table */
 .show-table .position-table {
   display: block;
 }
