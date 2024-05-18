@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
 import "./App.css";
 import {
   BoidModel,
@@ -12,6 +10,20 @@ import { scaleLinear } from "@visx/scale";
 
 const initialBots: Bot[] = Array.from({ length: 10 }, generateRandomBot);
 
+const BoidSvg = ({
+  x,
+  y,
+  rotation,
+}: {
+  x: number;
+  y: number;
+  rotation: number;
+}) => (
+  <g transform={`translate(${x}, ${y}) rotate(${rotation})`}>
+    <polygon points="-5,-5 10,0 -5,5" fill="brown" />
+  </g>
+);
+
 function App() {
   const [count, setCount] = useState(0);
   const [bots, setBots] = useState<Bot[]>(initialBots);
@@ -21,7 +33,6 @@ function App() {
   const MIN = -100;
   const MAX = 100;
   const SCALE = 400;
-  const ARROW_SCALE = 10; // Scale factor for arrow length
 
   useEffect(() => {
     let timeoutId: number;
@@ -79,14 +90,6 @@ function App() {
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
       <h1>Boids</h1>
       <p>
         https://vanhunteradams.com/Pico/Animal_Movement/Boids-algorithm.html#Algorithm-Overview
@@ -160,40 +163,14 @@ function App() {
           strokeWidth={2}
         />
 
-        {/* Existing bot positions visualization */}
+        {/* Custom SVG for bot positions */}
         {bots.map((bot) => {
-          const x1 = xScale(bot.xPos);
-          const y1 = yScale(bot.yPos);
-          const x2 = xScale(bot.xPos + bot.xVel * ARROW_SCALE);
-          const y2 = yScale(bot.yPos + bot.yVel * ARROW_SCALE);
+          const x = xScale(bot.xPos);
+          const y = yScale(bot.yPos);
+          const rotation = (Math.atan2(bot.yVel, bot.xVel) * 180) / Math.PI;
 
-          return (
-            <line
-              key={bot.id}
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke="blue"
-              strokeWidth={2}
-              markerEnd="url(#arrowhead)"
-            />
-          );
+          return <BoidSvg key={bot.id} x={x} y={y} rotation={rotation} />;
         })}
-
-        {/* Arrowhead marker definition */}
-        <defs>
-          <marker
-            id="arrowhead"
-            markerWidth="10"
-            markerHeight="7"
-            refX="0"
-            refY="3.5"
-            orient="auto"
-          >
-            <polygon points="0 0, 10 3.5, 0 7" fill="blue" />
-          </marker>
-        </defs>
       </svg>
       <table>
         <thead>
