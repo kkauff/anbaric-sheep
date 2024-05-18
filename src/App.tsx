@@ -5,6 +5,8 @@ import {
   Bot,
   generateRandomBot,
   runStepChange,
+  IdentityModel,
+  Model,
 } from "./AutomataUtils";
 import { scaleLinear } from "@visx/scale";
 
@@ -24,15 +26,43 @@ const BoidSvg = ({
   </g>
 );
 
+const models: { displayString: string; model: Model }[] = [
+  {
+    displayString: "Boids",
+    model: new BoidModel(40, 8, 0.0005, 0.05, 0.05, -100, -100, 100, 100),
+  },
+  { displayString: "Identity", model: new IdentityModel() },
+];
+
 function App() {
   const [count, setCount] = useState(0);
   const [bots, setBots] = useState<Bot[]>(initialBots);
   const [isRunning, setIsRunning] = useState(false);
   const [stepsPerSecond, setStepsPerSecond] = useState(1);
+  const [selectedModel, setSelectedModel] = useState<Model>(models[0].model);
+  const [showTable, setShowTable] = useState(false);
+  const [scale, setScale] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight - 60,
+  });
 
-  const MIN = -100;
-  const MAX = 100;
-  const SCALE = 400;
+  useEffect(() => {
+    const handleResize = () => {
+      setScale({ width: window.innerWidth, height: window.innerHeight - 60 });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const xScale = scaleLinear({
+    domain: [-100, 100],
+    range: [0, scale.width],
+  });
+  const yScale = scaleLinear({
+    domain: [-100, 100],
+    range: [scale.height, 0],
+  });
 
   useEffect(() => {
     let timeoutId: number;
@@ -40,161 +70,99 @@ function App() {
     const step = () => {
       if (isRunning) {
         const { updatedBots, updatedCount } = runStepChange(
-          new BoidModel(
-            40,
-            // 0.2,
-            8,
-            0.0005,
-            0.05,
-            0.05,
-            // 6,
-            // 3,
-            // 0.01,
-            // 0.00004,
-            // 0.001
-            MIN,
-            MIN,
-            MAX,
-            MAX
-          ),
+          selectedModel,
           bots,
           count
         );
         setBots(updatedBots);
         setCount(updatedCount);
-        timeoutId = setTimeout(step, 1000 / stepsPerSecond); // Run every second
+        timeoutId = setTimeout(step, 1000 / stepsPerSecond);
       }
     };
 
     if (isRunning) {
-      timeoutId = setTimeout(step, 1000 / stepsPerSecond); // Initial run
+      timeoutId = setTimeout(step, 1000 / stepsPerSecond);
     }
 
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [isRunning, bots, count]);
+    return () => clearTimeout(timeoutId);
+  }, [isRunning, bots, count, selectedModel, stepsPerSecond]);
 
   const handleStartStopClick = () => {
     setIsRunning((prevIsRunning) => !prevIsRunning);
   };
 
-  const xScale = scaleLinear({
-    domain: [MIN, MAX],
-    range: [0, SCALE],
-  });
-  const yScale = scaleLinear({
-    domain: [MIN, MAX],
-    range: [SCALE, 0],
-  });
-
   return (
-    <>
-      <h1>Boids</h1>
-      <p>
-        https://vanhunteradams.com/Pico/Animal_Movement/Boids-algorithm.html#Algorithm-Overview
-      </p>
-      <div className="card">
-        <label htmlFor="stepsInput">Steps per second:</label>
-        <input
-          type="number"
-          id="stepsInput"
-          value={stepsPerSecond}
-          onChange={(e) => setStepsPerSecond(Number(e.target.value))}
-          style={{ marginRight: "10px" }} // Adjust the margin as needed
-        />
-        <button onClick={handleStartStopClick}>
-          {isRunning ? "Stop" : "Start"}
-        </button>
+    <div className={`container ${showTable ? "show-table" : ""}`}>
+      <header className="header">
+        <h1 className="title">Boids</h1>
+        <div className="config-bar">
+          <label htmlFor="stepsInput">Steps per second:</label>
+          <input
+            type="number"
+            id="stepsInput"
+            value={stepsPerSecond}
+            onChange={(e) => setStepsPerSecond(Number(e.target.value))}
+            style={{ marginRight: "10px" }}
+          />
+          <label htmlFor="modelSelect">Model:</label>
+          <select
+            id="modelSelect"
+            onChange={(e) =>
+              setSelectedModel(models[parseInt(e.target.value)].model)
+            }
+            style={{ marginRight: "10px" }}
+          >
+            {models.map((model, index) => (
+              <option key={index} value={index}>
+                {model.displayString}
+              </option>
+            ))}
+          </select>
+          <button onClick={handleStartStopClick}>
+            {isRunning ? "Stop" : "Start"}
+          </button>
+          <button onClick={() => setShowTable(!showTable)}>
+            {showTable ? "Hide" : "Show"} Position Table
+          </button>
+        </div>
+      </header>
+      <div className="grid-container">
+        <svg className="full-size-svg" width="100%" height="100%">
+          {bots.map((bot) => {
+            const x = xScale(bot.xPos);
+            const y = yScale(bot.yPos);
+            const rotation = (Math.atan2(bot.yVel, bot.xVel) * 180) / Math.PI;
+            return <BoidSvg key={bot.id} x={x} y={y} rotation={rotation} />;
+          })}
+        </svg>
       </div>
-      {/* Bot positions visualization */}
-      <svg width={SCALE} height={SCALE}>
-        {/* Horizontal boundaries */}
-        <line
-          x1={xScale(MIN)}
-          x2={xScale(MAX)}
-          y1={yScale(MIN)}
-          y2={yScale(MIN)}
-          stroke="gray"
-          strokeWidth={2}
-        />
-        <line
-          x1={xScale(MIN)}
-          x2={xScale(MAX)}
-          y1={yScale(MAX)}
-          y2={yScale(MAX)}
-          stroke="gray"
-          strokeWidth={2}
-        />
-
-        {/* Vertical boundaries */}
-        <line
-          x1={xScale(-100)}
-          x2={xScale(-100)}
-          y1={yScale(-100)}
-          y2={yScale(100)}
-          stroke="black"
-          strokeWidth={2}
-        />
-        <line
-          x1={xScale(100)}
-          x2={xScale(100)}
-          y1={yScale(-100)}
-          y2={yScale(100)}
-          stroke="black"
-          strokeWidth={2}
-        />
-
-        {/* Bolded lines at x = 0 and y = 0 */}
-        <line
-          x1={xScale(0)}
-          x2={xScale(0)}
-          y1={yScale(-100)}
-          y2={yScale(100)}
-          stroke="black"
-          strokeWidth={2}
-        />
-        <line
-          x1={xScale(-100)}
-          x2={xScale(100)}
-          y1={yScale(0)}
-          y2={yScale(0)}
-          stroke="black"
-          strokeWidth={2}
-        />
-
-        {/* Custom SVG for bot positions */}
-        {bots.map((bot) => {
-          const x = xScale(bot.xPos);
-          const y = yScale(bot.yPos);
-          const rotation = (Math.atan2(bot.yVel, bot.xVel) * 180) / Math.PI;
-
-          return <BoidSvg key={bot.id} x={x} y={y} rotation={rotation} />;
-        })}
-      </svg>
-      <table>
-        <thead>
-          <tr>
-            <th>Bot ID</th>
-            <th>xPos</th>
-            <th>yPos</th>
-            <th>xVel</th>
-            <th>yVel</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bots.map((bot) => (
-            <tr key={bot.id}>
-              <td>{bot.id}</td>
-              <td>{bot.xPos}</td>
-              <td>{bot.yPos}</td>
-              <td>{bot.xVel}</td>
-              <td>{bot.yVel}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
+      {showTable && (
+        <div className="position-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Bot ID</th>
+                <th>xPos</th>
+                <th>yPos</th>
+                <th>xVel</th>
+                <th>yVel</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bots.map((bot) => (
+                <tr key={bot.id}>
+                  <td>{bot.id}</td>
+                  <td>{bot.xPos.toFixed(2)}</td>
+                  <td>{bot.yPos.toFixed(2)}</td>
+                  <td>{bot.xVel.toFixed(2)}</td>
+                  <td>{bot.yVel.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 
