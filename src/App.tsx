@@ -21,6 +21,7 @@ function App() {
   const MIN = -100;
   const MAX = 100;
   const SCALE = 400;
+  const ARROW_SCALE = 10; // Scale factor for arrow length
 
   useEffect(() => {
     let timeoutId: number;
@@ -160,16 +161,39 @@ function App() {
         />
 
         {/* Existing bot positions visualization */}
-        {bots.map((bot) => (
-          <rect
-            key={bot.id}
-            x={xScale(bot.xPos)}
-            y={yScale(bot.yPos)}
-            width={5}
-            height={5}
-            fill="blue"
-          />
-        ))}
+        {bots.map((bot) => {
+          const x1 = xScale(bot.xPos);
+          const y1 = yScale(bot.yPos);
+          const x2 = xScale(bot.xPos + bot.xVel * ARROW_SCALE);
+          const y2 = yScale(bot.yPos + bot.yVel * ARROW_SCALE);
+
+          return (
+            <line
+              key={bot.id}
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
+              stroke="blue"
+              strokeWidth={2}
+              markerEnd="url(#arrowhead)"
+            />
+          );
+        })}
+
+        {/* Arrowhead marker definition */}
+        <defs>
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="7"
+            refX="0"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill="blue" />
+          </marker>
+        </defs>
       </svg>
       <table>
         <thead>
