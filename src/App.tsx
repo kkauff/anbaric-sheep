@@ -38,7 +38,7 @@ function App() {
   const [count, setCount] = useState(0);
   const [bots, setBots] = useState<Bot[]>(initialBots);
   const [isRunning, setIsRunning] = useState(false);
-  const [stepsPerSecond, setStepsPerSecond] = useState(1);
+  const [stepsPerSecond, setStepsPerSecond] = useState(50);
   const [selectedModel, setSelectedModel] = useState<Model>(models[0].model);
   const [showTable, setShowTable] = useState(false);
   const [scale, setScale] = useState({
