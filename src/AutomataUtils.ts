@@ -153,8 +153,21 @@ export function generateRandomBot(): Bot {
   const id = Math.floor(Math.random() * 1000); // Unique ID for each bot
   const xPos = Math.random() * 100 - 50; // Random x position in [-50, 50]
   const yPos = Math.random() * 100 - 50; // Random y position in [-50, 50]
-  const xVel = Math.random() * 2 - 1; // Random x velocity (-1 to 1)
-  const yVel = Math.random() * 2 - 1; // Random y velocity (-1 to 1)
+
+  // Generate velocity with guaranteed minimum magnitude to prevent stationary bots
+  let xVel = Math.random() * 2 - 1; // Random x velocity (-1 to 1)
+  let yVel = Math.random() * 2 - 1; // Random y velocity (-1 to 1)
+
+  // Ensure minimum speed of 0.3 to prevent near-zero velocities
+  const currentSpeed = Math.sqrt(xVel * xVel + yVel * yVel);
+  const minSpeed = 0.3;
+
+  if (currentSpeed < minSpeed) {
+    // Scale up the velocity to meet minimum speed requirement
+    const scale = minSpeed / currentSpeed;
+    xVel *= scale;
+    yVel *= scale;
+  }
 
   return { id, xPos, yPos, xVel, yVel };
 }
