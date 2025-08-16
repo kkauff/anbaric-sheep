@@ -11,12 +11,6 @@ export interface Model {
   update(bots: Bot[]): Bot[];
 }
 
-export class IdentityModel implements Model {
-  update(bots: Bot[]): Bot[] {
-    return bots;
-  }
-}
-
 export class BoidModel implements Model {
   private visualRange: number;
   // private turnFactor: number;
