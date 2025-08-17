@@ -13,16 +13,13 @@ export interface Model {
 
 export class BoidModel implements Model {
   private visualRange: number;
-  // private turnFactor: number;
-  private protectedRange: number;
+  private turnFactor: number;
+  private minDistance: number; // Separation distance (like Ben Eater's)
   private centeringFactor: number;
   private avoidFactor: number;
   private matchingFactor: number;
-  // private maxSpeed: number;
-  // private minSpeed: number;
-  // private maxBias: number;
-  // private biasIncrement: number;
-  // private defaultBiasVal: number;
+  private speedLimit: number;
+  private margin: number; // Boundary margin
   private xMin: number;
   private yMin: number;
   private xMax: number;
@@ -30,32 +27,26 @@ export class BoidModel implements Model {
 
   constructor(
     visualRange: number,
-    // turnFactor: number,
-    protectedRange: number,
+    turnFactor: number,
+    minDistance: number,
     centeringFactor: number,
     avoidFactor: number,
     matchingFactor: number,
-    // maxSpeed: number,
-    // minSpeed: number,
-    // maxBias: number,
-    // biasIncrement: number,
-    // defaultBiasVal: number
+    speedLimit: number,
+    margin: number,
     xMin: number,
     yMin: number,
     xMax: number,
     yMax: number
   ) {
     this.visualRange = visualRange;
-    // this.turnFactor = turnFactor;
-    this.protectedRange = protectedRange;
+    this.turnFactor = turnFactor;
+    this.minDistance = minDistance;
     this.centeringFactor = centeringFactor;
     this.avoidFactor = avoidFactor;
     this.matchingFactor = matchingFactor;
-    // this.maxSpeed = maxSpeed;
-    // this.minSpeed = minSpeed;
-    // this.maxBias = maxBias;
-    // this.biasIncrement = biasIncrement;
-    // this.defaultBiasVal = defaultBiasVal;
+    this.speedLimit = speedLimit;
+    this.margin = margin;
     this.xMin = xMin;
     this.yMin = yMin;
     this.xMax = xMax;
@@ -81,94 +72,142 @@ export class BoidModel implements Model {
     this.yMax = yMax;
   }
 
-  update(bots: Bot[]): Bot[] {
-    const visualRangeSquared = this.visualRange * this.visualRange;
-    const protectedRangeSquared = this.protectedRange * this.protectedRange;
-    const maxSpeed = 2.0; // Maximum speed limit
-    const minSpeed = 0.3; // Minimum speed to prevent stationary bots
+  // Helper function to calculate distance between two boids
+  private distance(boid1: Bot, boid2: Bot): number {
+    return Math.sqrt(
+      (boid1.xPos - boid2.xPos) * (boid1.xPos - boid2.xPos) +
+        (boid1.yPos - boid2.yPos) * (boid1.yPos - boid2.yPos)
+    );
+  }
 
-    return bots.map((boid) => {
-      let xposAvg = 0;
-      let yposAvg = 0;
-      let xvelAvg = 0;
-      let yvelAvg = 0;
-      let neighboringBoids = 0;
-      let closeDx = 0;
-      let closeDy = 0;
+  // Rule 1: Cohesion - fly towards center of mass of neighbors
+  private flyTowardsCenter(boid: Bot, bots: Bot[]): void {
+    let centerX = 0;
+    let centerY = 0;
+    let numNeighbors = 0;
 
-      for (const otherBoid of bots) {
-        if (boid.id !== otherBoid.id) {
-          const dx = boid.xPos - otherBoid.xPos;
-          const dy = boid.yPos - otherBoid.yPos;
-          const squaredDistance = dx * dx + dy * dy;
+    for (const otherBoid of bots) {
+      if (
+        boid.id !== otherBoid.id &&
+        this.distance(boid, otherBoid) < this.visualRange
+      ) {
+        centerX += otherBoid.xPos;
+        centerY += otherBoid.yPos;
+        numNeighbors++;
+      }
+    }
 
-          if (squaredDistance < visualRangeSquared) {
-            if (squaredDistance < protectedRangeSquared) {
-              closeDx += boid.xPos - otherBoid.xPos;
-              closeDy += boid.yPos - otherBoid.yPos;
-            } else {
-              xposAvg += otherBoid.xPos;
-              yposAvg += otherBoid.yPos;
-              xvelAvg += otherBoid.xVel;
-              yvelAvg += otherBoid.yVel;
-              neighboringBoids++;
-            }
-          }
+    if (numNeighbors > 0) {
+      centerX = centerX / numNeighbors;
+      centerY = centerY / numNeighbors;
+
+      boid.xVel += (centerX - boid.xPos) * this.centeringFactor;
+      boid.yVel += (centerY - boid.yPos) * this.centeringFactor;
+    }
+  }
+
+  // Rule 2: Separation - avoid other boids that are too close
+  private avoidOthers(boid: Bot, bots: Bot[]): void {
+    let moveX = 0;
+    let moveY = 0;
+
+    for (const otherBoid of bots) {
+      if (boid.id !== otherBoid.id) {
+        if (this.distance(boid, otherBoid) < this.minDistance) {
+          moveX += boid.xPos - otherBoid.xPos;
+          moveY += boid.yPos - otherBoid.yPos;
         }
       }
+    }
 
-      if (neighboringBoids > 0) {
-        xposAvg /= neighboringBoids;
-        yposAvg /= neighboringBoids;
-        xvelAvg /= neighboringBoids;
-        yvelAvg /= neighboringBoids;
+    boid.xVel += moveX * this.avoidFactor;
+    boid.yVel += moveY * this.avoidFactor;
+  }
 
-        boid.xVel +=
-          (xposAvg - boid.xPos) * this.centeringFactor +
-          (xvelAvg - boid.xVel) * this.matchingFactor;
-        boid.yVel +=
-          (yposAvg - boid.yPos) * this.centeringFactor +
-          (yvelAvg - boid.yVel) * this.matchingFactor;
+  // Rule 3: Alignment - match velocity with neighbors
+  private matchVelocity(boid: Bot, bots: Bot[]): void {
+    let avgDX = 0;
+    let avgDY = 0;
+    let numNeighbors = 0;
+
+    for (const otherBoid of bots) {
+      if (
+        boid.id !== otherBoid.id &&
+        this.distance(boid, otherBoid) < this.visualRange
+      ) {
+        avgDX += otherBoid.xVel;
+        avgDY += otherBoid.yVel;
+        numNeighbors++;
       }
+    }
 
-      boid.xVel += closeDx * this.avoidFactor;
-      boid.yVel += closeDy * this.avoidFactor;
+    if (numNeighbors > 0) {
+      avgDX = avgDX / numNeighbors;
+      avgDY = avgDY / numNeighbors;
 
-      // Speed limiting - crucial for stability
-      const currentSpeed = Math.sqrt(
-        boid.xVel * boid.xVel + boid.yVel * boid.yVel
-      );
+      boid.xVel += (avgDX - boid.xVel) * this.matchingFactor;
+      boid.yVel += (avgDY - boid.yVel) * this.matchingFactor;
+    }
+  }
 
-      if (currentSpeed > maxSpeed) {
-        // Scale down to max speed
-        boid.xVel = (boid.xVel / currentSpeed) * maxSpeed;
-        boid.yVel = (boid.yVel / currentSpeed) * maxSpeed;
-      } else if (currentSpeed < minSpeed && currentSpeed > 0) {
-        // Scale up to min speed
-        boid.xVel = (boid.xVel / currentSpeed) * minSpeed;
-        boid.yVel = (boid.yVel / currentSpeed) * minSpeed;
-      }
+  // Speed limiting
+  private limitSpeed(boid: Bot): void {
+    const speed = Math.sqrt(boid.xVel * boid.xVel + boid.yVel * boid.yVel);
+    if (speed > this.speedLimit) {
+      boid.xVel = (boid.xVel / speed) * this.speedLimit;
+      boid.yVel = (boid.yVel / speed) * this.speedLimit;
+    }
+  }
 
-      // Update position
+  // Boundary handling - Ben Eater's gentle approach with hard constraints
+  private keepWithinBounds(boid: Bot): void {
+    // Gentle turning when approaching boundaries
+    if (boid.xPos < this.xMin + this.margin) {
+      boid.xVel += this.turnFactor;
+    }
+    if (boid.xPos > this.xMax - this.margin) {
+      boid.xVel -= this.turnFactor;
+    }
+    if (boid.yPos < this.yMin + this.margin) {
+      boid.yVel += this.turnFactor;
+    }
+    if (boid.yPos > this.yMax - this.margin) {
+      boid.yVel -= this.turnFactor;
+    }
+
+    // Hard constraints to prevent going outside boundaries
+    if (boid.xPos < this.xMin) {
+      boid.xPos = this.xMin;
+      boid.xVel = Math.abs(boid.xVel); // Bounce back
+    }
+    if (boid.xPos > this.xMax) {
+      boid.xPos = this.xMax;
+      boid.xVel = -Math.abs(boid.xVel); // Bounce back
+    }
+    if (boid.yPos < this.yMin) {
+      boid.yPos = this.yMin;
+      boid.yVel = Math.abs(boid.yVel); // Bounce back
+    }
+    if (boid.yPos > this.yMax) {
+      boid.yPos = this.yMax;
+      boid.yVel = -Math.abs(boid.yVel); // Bounce back
+    }
+  }
+
+  update(bots: Bot[]): Bot[] {
+    return bots.map((boid) => {
+      // Apply the three rules
+      this.flyTowardsCenter(boid, bots);
+      this.avoidOthers(boid, bots);
+      this.matchVelocity(boid, bots);
+
+      // Apply constraints
+      this.limitSpeed(boid);
+      this.keepWithinBounds(boid);
+
+      // Update position based on velocity
       boid.xPos += boid.xVel;
       boid.yPos += boid.yVel;
-
-      // Boundary handling with softer reflection
-      if (boid.xPos < this.xMin) {
-        boid.xPos = this.xMin;
-        boid.xVel = Math.abs(boid.xVel); // Always bounce inward
-      } else if (boid.xPos > this.xMax) {
-        boid.xPos = this.xMax;
-        boid.xVel = -Math.abs(boid.xVel); // Always bounce inward
-      }
-
-      if (boid.yPos < this.yMin) {
-        boid.yPos = this.yMin;
-        boid.yVel = Math.abs(boid.yVel); // Always bounce inward
-      } else if (boid.yPos > this.yMax) {
-        boid.yPos = this.yMax;
-        boid.yVel = -Math.abs(boid.yVel); // Always bounce inward
-      }
 
       return boid;
     });

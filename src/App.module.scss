@@ -119,6 +119,17 @@
   border: none;
 }
 
+.configItem input[type="checkbox"] {
+  margin-right: 8px;
+  accent-color: vars.$accentColor;
+}
+
+.configItem label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
 /* Configuration sections */
 .configSection {
   margin-top: 20px;
@@ -213,6 +224,18 @@
 .fullSizeSvg {
   width: 100%;
   height: 100%;
+}
+
+.threeContainer {
+  width: 100%;
+  height: 100%;
+  display: block;
+
+  canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
 }
 
 /* Blueprint.js component overrides for proper theming */

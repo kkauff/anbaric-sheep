@@ -11,6 +11,7 @@ import {
 import { scaleLinear } from "@visx/scale";
 import { Button, Collapse } from "@blueprintjs/core";
 import { Cog, Th } from "@blueprintjs/icons";
+import { ThreeBoidsRenderer } from "./ThreeBoidsRenderer";
 
 const BoidSvg = ({
   x,
@@ -27,15 +28,18 @@ const BoidSvg = ({
 );
 
 const boidModel = new BoidModel(
-  40,
-  8,
-  0.0005,
-  0.05,
-  0.05,
-  -100,
-  -100,
-  100,
-  100
+  75, // visualRange - Ben Eater uses 75
+  1, // turnFactor - Ben Eater uses 1 for boundary turning
+  20, // minDistance - Ben Eater uses 20 for separation
+  0.005, // centeringFactor - Ben Eater uses 0.005
+  0.05, // avoidFactor - Ben Eater uses 0.05
+  0.05, // matchingFactor - Ben Eater uses 0.05
+  15, // speedLimit - Ben Eater uses 15
+  50, // margin - boundary margin for gentle turning
+  -100, // xMin
+  -100, // yMin
+  100, // xMax
+  100 // yMax
 );
 
 function App() {
@@ -49,10 +53,14 @@ function App() {
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [showTablePanel, setShowTablePanel] = useState(false);
 
-  // Behavioral weight states (user-friendly 0-5 scale) - using original Reynolds algorithm proportions
-  const [cohesionWeight, setCohesionWeight] = useState(1.0); // centeringFactor - weakest
-  const [separationWeight, setSeparationWeight] = useState(3.0); // avoidFactor - strongest (collision avoidance priority)
-  const [alignmentWeight, setAlignmentWeight] = useState(2.0); // matchingFactor - medium (flocking behavior)
+  // Behavioral weight states (user-friendly 0-100 scale) - Ben Eater's proportions
+  const [cohesionWeight, setCohesionWeight] = useState(50); // centeringFactor - Ben Eater uses 0.005
+  const [separationWeight, setSeparationWeight] = useState(50); // avoidFactor - Ben Eater uses 0.05
+  const [alignmentWeight, setAlignmentWeight] = useState(50); // matchingFactor - Ben Eater uses 0.05
+
+  // Visual settings
+  const [useThreeJS, setUseThreeJS] = useState(true); // Default to Three.js for better visuals
+  const [showTrails, setShowTrails] = useState(false);
 
   const [scale, setScale] = useState({
     width: window.innerWidth,
@@ -73,13 +81,14 @@ function App() {
 
   // Update boid model weights when behavioral weights change
   useEffect(() => {
-    // Convert user-friendly 0-5 scale to algorithm factors
-    // Each weight is independent and directly scaled
-    const baseFactor = 0.01;
+    // Convert user-friendly 0-100 scale to Ben Eater's algorithm factors
+    // Cohesion: 0-100 -> 0-0.01 (Ben Eater uses 0.005)
+    // Separation: 0-100 -> 0-0.1 (Ben Eater uses 0.05)
+    // Alignment: 0-100 -> 0-0.1 (Ben Eater uses 0.05)
 
-    const cohesionFactor = cohesionWeight * baseFactor;
-    const separationFactor = separationWeight * baseFactor;
-    const alignmentFactor = alignmentWeight * baseFactor;
+    const cohesionFactor = (cohesionWeight / 100) * 0.01;
+    const separationFactor = (separationWeight / 100) * 0.1;
+    const alignmentFactor = (alignmentWeight / 100) * 0.1;
 
     boidModel.updateWeights(cohesionFactor, separationFactor, alignmentFactor);
   }, [cohesionWeight, separationWeight, alignmentWeight]);
@@ -106,62 +115,73 @@ function App() {
     return () => window.removeEventListener("resize", updateScale);
   }, [showConfigPanel, showTablePanel]);
 
-  // Track actual SVG dimensions and update boundaries accordingly
+  // Track actual container dimensions and update boundaries accordingly
   useEffect(() => {
-    const svgElement = document.querySelector(
-      `.${styles.fullSizeSvg}`
-    ) as SVGElement;
-    if (!svgElement) return;
-
-    const updateSVGDimensions = () => {
-      const rect = svgElement.getBoundingClientRect();
-      const newDimensions = {
-        width: rect.width,
-        height: rect.height,
-      };
-
-      setActualSVGDimensions(newDimensions);
-
-      // Update boid boundaries based on actual SVG dimensions
-      const aspectRatio = newDimensions.width / newDimensions.height;
-      const baseSize = 100;
-
-      let xRange, yRange;
-      if (aspectRatio > 1) {
-        xRange = baseSize * aspectRatio;
-        yRange = baseSize;
-      } else {
-        xRange = baseSize;
-        yRange = baseSize / aspectRatio;
+    const setupDimensionTracking = () => {
+      const containerElement = document.querySelector(
+        `.${styles.gridContainer}`
+      ) as HTMLElement;
+      if (!containerElement) {
+        // Retry after a short delay if container not found
+        setTimeout(setupDimensionTracking, 100);
+        return;
       }
 
-      boidModel.updateBoundaries(-xRange, -yRange, xRange, yRange);
+      const updateContainerDimensions = () => {
+        const rect = containerElement.getBoundingClientRect();
+        const newDimensions = {
+          width: rect.width,
+          height: rect.height,
+        };
 
-      console.log("SVG dimensions update:", {
-        actualWidth: newDimensions.width,
-        actualHeight: newDimensions.height,
-        aspectRatio,
-        xRange,
-        yRange,
-        boundaries: {
-          xMin: -xRange,
-          yMin: -yRange,
-          xMax: xRange,
-          yMax: yRange,
-        },
-      });
+        // Only update if dimensions are valid
+        if (newDimensions.width > 0 && newDimensions.height > 0) {
+          setActualSVGDimensions(newDimensions);
+
+          // Update boid boundaries based on actual container dimensions
+          const aspectRatio = newDimensions.width / newDimensions.height;
+          const baseSize = 100;
+
+          let xRange, yRange;
+          if (aspectRatio > 1) {
+            xRange = baseSize * aspectRatio;
+            yRange = baseSize;
+          } else {
+            xRange = baseSize;
+            yRange = baseSize / aspectRatio;
+          }
+
+          boidModel.updateBoundaries(-xRange, -yRange, xRange, yRange);
+
+          console.log("Container dimensions update:", {
+            actualWidth: newDimensions.width,
+            actualHeight: newDimensions.height,
+            aspectRatio,
+            xRange,
+            yRange,
+            boundaries: {
+              xMin: -xRange,
+              yMin: -yRange,
+              xMax: xRange,
+              yMax: yRange,
+            },
+          });
+        }
+      };
+
+      // Initial measurement with a small delay
+      setTimeout(updateContainerDimensions, 50);
+
+      // Set up ResizeObserver to track changes
+      const resizeObserver = new ResizeObserver(updateContainerDimensions);
+      resizeObserver.observe(containerElement);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
     };
 
-    // Initial measurement
-    updateSVGDimensions();
-
-    // Set up ResizeObserver to track changes
-    const resizeObserver = new ResizeObserver(updateSVGDimensions);
-    resizeObserver.observe(svgElement);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
+    return setupDimensionTracking();
   }, [showConfigPanel, showTablePanel]); // Re-run when panels change
 
   // Calculate coordinate ranges using actual SVG dimensions to match boundary calculations
@@ -269,18 +289,44 @@ function App() {
             </div>
 
             <div className={styles.configSection}>
+              <h4>Visual Settings</h4>
+
+              <div className={styles.configItem}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={useThreeJS}
+                    onChange={(e) => setUseThreeJS(e.target.checked)}
+                  />
+                  Use Three.js Renderer (Enhanced Graphics)
+                </label>
+              </div>
+
+              <div className={styles.configItem}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={showTrails}
+                    onChange={(e) => setShowTrails(e.target.checked)}
+                  />
+                  Show Trails
+                </label>
+              </div>
+            </div>
+
+            <div className={styles.configSection}>
               <h4>Behavioral Weights</h4>
 
               <div className={styles.configItem}>
                 <label htmlFor="cohesionSlider">
-                  Cohesion (move toward center): {cohesionWeight.toFixed(1)}
+                  Cohesion (move toward center): {cohesionWeight.toFixed(0)}
                 </label>
                 <input
                   type="range"
                   id="cohesionSlider"
                   min="0"
-                  max="5"
-                  step="0.1"
+                  max="100"
+                  step="1"
                   value={cohesionWeight}
                   onChange={(e) => setCohesionWeight(Number(e.target.value))}
                 />
@@ -288,14 +334,14 @@ function App() {
 
               <div className={styles.configItem}>
                 <label htmlFor="separationSlider">
-                  Separation (avoid others): {separationWeight.toFixed(1)}
+                  Separation (avoid others): {separationWeight.toFixed(0)}
                 </label>
                 <input
                   type="range"
                   id="separationSlider"
                   min="0"
-                  max="5"
-                  step="0.1"
+                  max="100"
+                  step="1"
                   value={separationWeight}
                   onChange={(e) => setSeparationWeight(Number(e.target.value))}
                 />
@@ -303,14 +349,14 @@ function App() {
 
               <div className={styles.configItem}>
                 <label htmlFor="alignmentSlider">
-                  Alignment (match velocities): {alignmentWeight.toFixed(1)}
+                  Alignment (match velocities): {alignmentWeight.toFixed(0)}
                 </label>
                 <input
                   type="range"
                   id="alignmentSlider"
                   min="0"
-                  max="5"
-                  step="0.1"
+                  max="100"
+                  step="1"
                   value={alignmentWeight}
                   onChange={(e) => setAlignmentWeight(Number(e.target.value))}
                 />
@@ -331,15 +377,26 @@ function App() {
           </div>
         </header>
         <div className={styles.gridContainer}>
-          <svg className={styles.fullSizeSvg} width="100%" height="100%">
-            {bots.map((bot) => {
-              const x = xScale(bot.xPos);
-              const y = yScale(bot.yPos);
-              const rotation =
-                (Math.atan2(-bot.yVel, bot.xVel) * 180) / Math.PI;
-              return <BoidSvg key={bot.id} x={x} y={y} rotation={rotation} />;
-            })}
-          </svg>
+          {useThreeJS ? (
+            <ThreeBoidsRenderer
+              bots={bots}
+              width={actualWidth}
+              height={actualHeight}
+              xRange={xRange}
+              yRange={yRange}
+              showTrails={showTrails}
+            />
+          ) : (
+            <svg className={styles.fullSizeSvg} width="100%" height="100%">
+              {bots.map((bot) => {
+                const x = xScale(bot.xPos);
+                const y = yScale(bot.yPos);
+                const rotation =
+                  (Math.atan2(-bot.yVel, bot.xVel) * 180) / Math.PI;
+                return <BoidSvg key={bot.id} x={x} y={y} rotation={rotation} />;
+              })}
+            </svg>
+          )}
         </div>
       </div>
 

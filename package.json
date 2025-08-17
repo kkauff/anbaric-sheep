@@ -15,9 +15,11 @@
   "dependencies": {
     "@blueprintjs/core": "^6.1.0",
     "@blueprintjs/icons": "^6.0.0",
+    "@types/three": "^0.179.0",
     "@visx/visx": "^3.10.2",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "three": "^0.179.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
