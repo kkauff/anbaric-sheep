@@ -49,10 +49,10 @@ function App() {
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [showTablePanel, setShowTablePanel] = useState(false);
 
-  // Behavioral weight states (user-friendly 0-5 scale)
-  const [cohesionWeight, setCohesionWeight] = useState(1); // centeringFactor
-  const [separationWeight, setSeparationWeight] = useState(1); // avoidFactor
-  const [alignmentWeight, setAlignmentWeight] = useState(1); // matchingFactor
+  // Behavioral weight states (user-friendly 0-5 scale) - using original Reynolds algorithm proportions
+  const [cohesionWeight, setCohesionWeight] = useState(1.0); // centeringFactor - weakest
+  const [separationWeight, setSeparationWeight] = useState(3.0); // avoidFactor - strongest (collision avoidance priority)
+  const [alignmentWeight, setAlignmentWeight] = useState(2.0); // matchingFactor - medium (flocking behavior)
 
   const [scale, setScale] = useState({
     width: window.innerWidth,
@@ -333,7 +333,8 @@ function App() {
             {bots.map((bot) => {
               const x = xScale(bot.xPos);
               const y = yScale(bot.yPos);
-              const rotation = (Math.atan2(bot.yVel, bot.xVel) * 180) / Math.PI;
+              const rotation =
+                (Math.atan2(-bot.yVel, bot.xVel) * 180) / Math.PI;
               return <BoidSvg key={bot.id} x={x} y={y} rotation={rotation} />;
             })}
           </svg>
