@@ -48,9 +48,21 @@ function App() {
   const [stepsPerSecond, setStepsPerSecond] = useState(50);
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [showTablePanel, setShowTablePanel] = useState(false);
+
+  // Behavioral weight states (user-friendly 0-5 scale)
+  const [cohesionWeight, setCohesionWeight] = useState(1); // centeringFactor
+  const [separationWeight, setSeparationWeight] = useState(1); // avoidFactor
+  const [alignmentWeight, setAlignmentWeight] = useState(1); // matchingFactor
+
   const [scale, setScale] = useState({
     width: window.innerWidth,
     height: window.innerHeight - 60,
+  });
+
+  // Track actual SVG dimensions
+  const [actualSVGDimensions, setActualSVGDimensions] = useState({
+    width: 0,
+    height: 0,
   });
 
   // Update bots when numberOfBots changes
@@ -59,23 +71,135 @@ function App() {
     setCount(0); // Reset count when changing number of bots
   }, [numberOfBots]);
 
+  // Update boid model weights when behavioral weights change
   useEffect(() => {
-    const handleResize = () => {
-      setScale({ width: window.innerWidth, height: window.innerHeight - 60 });
+    // Convert user-friendly 0-5 scale to algorithm factors
+    // Each weight is independent and directly scaled
+    const baseFactor = 0.01;
+
+    const cohesionFactor = cohesionWeight * baseFactor;
+    const separationFactor = separationWeight * baseFactor;
+    const alignmentFactor = alignmentWeight * baseFactor;
+
+    boidModel.updateWeights(cohesionFactor, separationFactor, alignmentFactor);
+  }, [cohesionWeight, separationWeight, alignmentWeight]);
+
+  // Update scale to account for panel widths
+  useEffect(() => {
+    const updateScale = () => {
+      const leftPanelWidth = showConfigPanel ? 281 + 40 : 40;
+      const rightPanelWidth = showTablePanel ? 250 + 40 : 40;
+      const availableWidth =
+        window.innerWidth - leftPanelWidth - rightPanelWidth;
+      const availableHeight = window.innerHeight - 60; // Account for header
+
+      const newScale = {
+        width: Math.max(availableWidth, 200), // Minimum width
+        height: Math.max(availableHeight, 200), // Minimum height
+      };
+
+      setScale(newScale);
     };
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, [showConfigPanel, showTablePanel]);
+
+  // Track actual SVG dimensions and update boundaries accordingly
+  useEffect(() => {
+    const svgElement = document.querySelector(".full-size-svg") as SVGElement;
+    if (!svgElement) return;
+
+    const updateSVGDimensions = () => {
+      const rect = svgElement.getBoundingClientRect();
+      const newDimensions = {
+        width: rect.width,
+        height: rect.height,
+      };
+
+      setActualSVGDimensions(newDimensions);
+
+      // Update boid boundaries based on actual SVG dimensions
+      const aspectRatio = newDimensions.width / newDimensions.height;
+      const baseSize = 100;
+
+      let xRange, yRange;
+      if (aspectRatio > 1) {
+        xRange = baseSize * aspectRatio;
+        yRange = baseSize;
+      } else {
+        xRange = baseSize;
+        yRange = baseSize / aspectRatio;
+      }
+
+      boidModel.updateBoundaries(-xRange, -yRange, xRange, yRange);
+
+      console.log("SVG dimensions update:", {
+        actualWidth: newDimensions.width,
+        actualHeight: newDimensions.height,
+        aspectRatio,
+        xRange,
+        yRange,
+        boundaries: {
+          xMin: -xRange,
+          yMin: -yRange,
+          xMax: xRange,
+          yMax: yRange,
+        },
+      });
+    };
+
+    // Initial measurement
+    updateSVGDimensions();
+
+    // Set up ResizeObserver to track changes
+    const resizeObserver = new ResizeObserver(updateSVGDimensions);
+    resizeObserver.observe(svgElement);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [showConfigPanel, showTablePanel]); // Re-run when panels change
+
+  // Calculate coordinate ranges using actual SVG dimensions to match boundary calculations
+  const actualWidth = actualSVGDimensions.width || scale.width;
+  const actualHeight = actualSVGDimensions.height || scale.height;
+  const aspectRatio = actualWidth / actualHeight;
+  const baseSize = 100;
+
+  let xRange, yRange;
+  if (aspectRatio > 1) {
+    xRange = baseSize * aspectRatio;
+    yRange = baseSize;
+  } else {
+    xRange = baseSize;
+    yRange = baseSize / aspectRatio;
+  }
 
   const xScale = scaleLinear({
-    domain: [-100, 100],
-    range: [0, scale.width],
+    domain: [-xRange, xRange],
+    range: [0, actualWidth],
   });
   const yScale = scaleLinear({
-    domain: [-100, 100],
-    range: [scale.height, 0],
+    domain: [-yRange, yRange],
+    range: [actualHeight, 0],
   });
+
+  // Debug logging for scale values (only log occasionally to avoid spam)
+  if (count % 100 === 0) {
+    console.log("Fixed scale values:", {
+      actualSVGWidth: actualWidth,
+      actualSVGHeight: actualHeight,
+      aspectRatio,
+      xRange,
+      yRange,
+      xDomain: [-xRange, xRange],
+      yDomain: [-yRange, yRange],
+      xRangePixels: [0, actualWidth],
+      yRangePixels: [actualHeight, 0],
+    });
+  }
 
   useEffect(() => {
     let timeoutId: number;
@@ -140,6 +264,55 @@ function App() {
                 max="100"
                 onChange={(e) => setNumberOfBots(Number(e.target.value))}
               />
+            </div>
+
+            <div className="config-section">
+              <h4>Behavioral Weights</h4>
+
+              <div className="config-item">
+                <label htmlFor="cohesionSlider">
+                  Cohesion (move toward center): {cohesionWeight.toFixed(1)}
+                </label>
+                <input
+                  type="range"
+                  id="cohesionSlider"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={cohesionWeight}
+                  onChange={(e) => setCohesionWeight(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="config-item">
+                <label htmlFor="separationSlider">
+                  Separation (avoid others): {separationWeight.toFixed(1)}
+                </label>
+                <input
+                  type="range"
+                  id="separationSlider"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={separationWeight}
+                  onChange={(e) => setSeparationWeight(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="config-item">
+                <label htmlFor="alignmentSlider">
+                  Alignment (match velocities): {alignmentWeight.toFixed(1)}
+                </label>
+                <input
+                  type="range"
+                  id="alignmentSlider"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={alignmentWeight}
+                  onChange={(e) => setAlignmentWeight(Number(e.target.value))}
+                />
+              </div>
             </div>
           </div>
         </Collapse>

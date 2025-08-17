@@ -91,12 +91,56 @@ body {
   font-weight: 500;
 }
 
-.config-item input {
+.config-item input[type="number"] {
   width: 100%;
   padding: 8px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background-color: var(--input-bg-color);
+  color: var(--text-color);
+}
+
+.config-item input[type="range"] {
+  width: 100%;
+  margin-top: 5px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-color);
+  outline: none;
+}
+
+.config-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-color);
+  cursor: pointer;
+}
+
+.config-item input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-color);
+  cursor: pointer;
+  border: none;
+}
+
+/* Configuration sections */
+.config-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.config-section h4 {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-color);
 }
 

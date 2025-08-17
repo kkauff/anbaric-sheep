@@ -62,9 +62,30 @@ export class BoidModel implements Model {
     this.yMax = yMax;
   }
 
+  // Method to update the behavioral weights
+  updateWeights(
+    centeringFactor: number,
+    avoidFactor: number,
+    matchingFactor: number
+  ) {
+    this.centeringFactor = centeringFactor;
+    this.avoidFactor = avoidFactor;
+    this.matchingFactor = matchingFactor;
+  }
+
+  // Method to update the boundaries
+  updateBoundaries(xMin: number, yMin: number, xMax: number, yMax: number) {
+    this.xMin = xMin;
+    this.yMin = yMin;
+    this.xMax = xMax;
+    this.yMax = yMax;
+  }
+
   update(bots: Bot[]): Bot[] {
     const visualRangeSquared = this.visualRange * this.visualRange;
     const protectedRangeSquared = this.protectedRange * this.protectedRange;
+    const maxSpeed = 2.0; // Maximum speed limit
+    const minSpeed = 0.3; // Minimum speed to prevent stationary bots
 
     return bots.map((boid) => {
       let xposAvg = 0;
@@ -113,25 +134,40 @@ export class BoidModel implements Model {
       boid.xVel += closeDx * this.avoidFactor;
       boid.yVel += closeDy * this.avoidFactor;
 
+      // Speed limiting - crucial for stability
+      const currentSpeed = Math.sqrt(
+        boid.xVel * boid.xVel + boid.yVel * boid.yVel
+      );
+
+      if (currentSpeed > maxSpeed) {
+        // Scale down to max speed
+        boid.xVel = (boid.xVel / currentSpeed) * maxSpeed;
+        boid.yVel = (boid.yVel / currentSpeed) * maxSpeed;
+      } else if (currentSpeed < minSpeed && currentSpeed > 0) {
+        // Scale up to min speed
+        boid.xVel = (boid.xVel / currentSpeed) * minSpeed;
+        boid.yVel = (boid.yVel / currentSpeed) * minSpeed;
+      }
+
       // Update position
       boid.xPos += boid.xVel;
       boid.yPos += boid.yVel;
 
-      // Boundary handling
+      // Boundary handling with softer reflection
       if (boid.xPos < this.xMin) {
         boid.xPos = this.xMin;
-        boid.xVel = -boid.xVel; // Reflect velocity
+        boid.xVel = Math.abs(boid.xVel); // Always bounce inward
       } else if (boid.xPos > this.xMax) {
         boid.xPos = this.xMax;
-        boid.xVel = -boid.xVel; // Reflect velocity
+        boid.xVel = -Math.abs(boid.xVel); // Always bounce inward
       }
 
       if (boid.yPos < this.yMin) {
         boid.yPos = this.yMin;
-        boid.yVel = -boid.yVel; // Reflect velocity
+        boid.yVel = Math.abs(boid.yVel); // Always bounce inward
       } else if (boid.yPos > this.yMax) {
         boid.yPos = this.yMax;
-        boid.yVel = -boid.yVel; // Reflect velocity
+        boid.yVel = -Math.abs(boid.yVel); // Always bounce inward
       }
 
       return boid;
