@@ -214,3 +214,30 @@
   width: 100%;
   height: 100%;
 }
+
+/* Blueprint.js component overrides for proper theming */
+.panelToggleButton {
+  color: vars.$textColor !important;
+
+  &:hover {
+    background-color: vars.$buttonHoverBackgroundColor !important;
+  }
+
+  .panelLabel {
+    color: vars.$textColor !important;
+  }
+}
+
+/* Ensure Blueprint.js buttons respect our theme */
+:global(.bp4-button.bp4-minimal) {
+  color: vars.$textColor !important;
+
+  &:hover {
+    background-color: vars.$buttonHoverBackgroundColor !important;
+  }
+}
+
+/* Blueprint.js collapse content theming */
+:global(.bp4-collapse-body) {
+  background-color: vars.$panelBackgroundColor !important;
+}
