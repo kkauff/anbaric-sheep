@@ -56,6 +56,8 @@
   max-width: 300px;
   background-color: vars.$panelBackgroundColor;
   color: vars.$textColor;
+  max-height: calc(100vh - 60px); /* Account for toggle button height */
+  overflow-y: auto;
 }
 
 .configPanel .panelContent {
@@ -146,7 +148,9 @@
 
 /* Table container with scrolling */
 .tableContainer {
-  max-height: 400px;
+  max-height: calc(
+    100vh - 120px
+  ); /* Use viewport height minus header and padding */
   overflow-y: auto;
 }
 

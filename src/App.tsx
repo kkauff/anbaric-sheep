@@ -17,15 +17,27 @@ const BoidSvg = ({
   x,
   y,
   rotation,
+  size,
 }: {
   x: number;
   y: number;
   rotation: number;
-}) => (
-  <g transform={`translate(${x}, ${y}) rotate(${rotation})`}>
-    <polygon points="-5,-5 10,0 -5,5" fill="var(--bot-color)" />
-  </g>
-);
+  size: number;
+}) => {
+  // Convert size (10-200) to scale factor (0.2-4.0)
+  const scaleFactor = size / 50;
+  const halfWidth = 5 * scaleFactor;
+  const length = 10 * scaleFactor;
+
+  return (
+    <g transform={`translate(${x}, ${y}) rotate(${rotation})`}>
+      <polygon
+        points={`-${halfWidth},-${halfWidth} ${length},0 -${halfWidth},${halfWidth}`}
+        fill="var(--bot-color)"
+      />
+    </g>
+  );
+};
 
 const boidModel = new BoidModel(
   75, // visualRange - Ben Eater uses 75
@@ -61,6 +73,8 @@ function App() {
   // Visual settings
   const [useThreeJS, setUseThreeJS] = useState(true); // Default to Three.js for better visuals
   const [showTrails, setShowTrails] = useState(false);
+  const [trailLength, setTrailLength] = useState(50); // Trail length (10-200 points)
+  const [botSize, setBotSize] = useState(50); // Bot size scale (0-100)
 
   const [scale, setScale] = useState({
     width: window.innerWidth,
@@ -312,6 +326,38 @@ function App() {
                   Show Trails
                 </label>
               </div>
+
+              {showTrails && (
+                <div className={styles.configItem}>
+                  <label htmlFor="trailLengthSlider">
+                    Trail Length: {trailLength.toFixed(0)} points
+                  </label>
+                  <input
+                    type="range"
+                    id="trailLengthSlider"
+                    min="5"
+                    max="200"
+                    step="5"
+                    value={trailLength}
+                    onChange={(e) => setTrailLength(Number(e.target.value))}
+                  />
+                </div>
+              )}
+
+              <div className={styles.configItem}>
+                <label htmlFor="botSizeSlider">
+                  Bot Size: {botSize.toFixed(0)}
+                </label>
+                <input
+                  type="range"
+                  id="botSizeSlider"
+                  min="10"
+                  max="200"
+                  step="5"
+                  value={botSize}
+                  onChange={(e) => setBotSize(Number(e.target.value))}
+                />
+              </div>
             </div>
 
             <div className={styles.configSection}>
@@ -385,6 +431,8 @@ function App() {
               xRange={xRange}
               yRange={yRange}
               showTrails={showTrails}
+              trailLength={trailLength}
+              botSize={botSize}
             />
           ) : (
             <svg className={styles.fullSizeSvg} width="100%" height="100%">
@@ -393,7 +441,15 @@ function App() {
                 const y = yScale(bot.yPos);
                 const rotation =
                   (Math.atan2(-bot.yVel, bot.xVel) * 180) / Math.PI;
-                return <BoidSvg key={bot.id} x={x} y={y} rotation={rotation} />;
+                return (
+                  <BoidSvg
+                    key={bot.id}
+                    x={x}
+                    y={y}
+                    rotation={rotation}
+                    size={botSize}
+                  />
+                );
               })}
             </svg>
           )}

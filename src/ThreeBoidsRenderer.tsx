@@ -10,6 +10,8 @@ interface ThreeBoidsRendererProps {
   xRange: number;
   yRange: number;
   showTrails?: boolean;
+  trailLength: number;
+  botSize: number;
 }
 
 export const ThreeBoidsRenderer: React.FC<ThreeBoidsRendererProps> = ({
@@ -19,6 +21,8 @@ export const ThreeBoidsRenderer: React.FC<ThreeBoidsRendererProps> = ({
   xRange,
   yRange,
   showTrails = false,
+  trailLength,
+  botSize,
 }) => {
   // Don't render if dimensions are invalid, but use fallback dimensions
   const hasValidDimensions =
@@ -152,16 +156,19 @@ export const ThreeBoidsRenderer: React.FC<ThreeBoidsRendererProps> = ({
   const createBoidGeometry = () => {
     const geometry = new THREE.BufferGeometry();
 
-    // Simple clean triangle
+    // Scale factor based on botSize (default size 50 = scale factor 1.0)
+    const scaleFactor = botSize / 50;
+
+    // Simple clean triangle scaled by botSize
     const vertices = new Float32Array([
       0,
-      8,
+      8 * scaleFactor,
       0, // tip
-      -4,
-      -4,
+      -4 * scaleFactor,
+      -4 * scaleFactor,
       0, // left base
-      4,
-      -4,
+      4 * scaleFactor,
+      -4 * scaleFactor,
       0, // right base
     ]);
 
@@ -188,6 +195,7 @@ export const ThreeBoidsRenderer: React.FC<ThreeBoidsRendererProps> = ({
       height,
       xRange,
       yRange,
+      botSize,
       firstBot: bots[0],
     });
 
@@ -228,6 +236,10 @@ export const ThreeBoidsRenderer: React.FC<ThreeBoidsRendererProps> = ({
           x: bot.xPos,
           y: bot.yPos,
         });
+      } else {
+        // Update existing boid geometry when botSize changes
+        mesh.geometry.dispose(); // Clean up old geometry
+        mesh.geometry = geometry;
       }
 
       // Update position
@@ -244,11 +256,15 @@ export const ThreeBoidsRenderer: React.FC<ThreeBoidsRendererProps> = ({
 
       // Update trail data
       if (showTrails) {
-        const trailData = trailDataRef.current.get(bot.id)!;
+        let trailData = trailDataRef.current.get(bot.id);
+        if (!trailData) {
+          trailData = [];
+          trailDataRef.current.set(bot.id, trailData);
+        }
         trailData.push(new THREE.Vector3(bot.xPos, bot.yPos, 0));
 
-        // Keep only last 50 points
-        if (trailData.length > 50) {
+        // Keep only last trailLength points
+        if (trailData.length > trailLength) {
           trailData.shift();
         }
       }
@@ -257,29 +273,34 @@ export const ThreeBoidsRenderer: React.FC<ThreeBoidsRendererProps> = ({
     console.log("Boids group children count:", boidsGroup.children.length);
 
     // Update trails
-    if (showTrails && trailsGroupRef.current) {
+    if (trailsGroupRef.current) {
       // Clear existing trails
       trailsGroupRef.current.clear();
 
-      // Create new trails
-      trailDataRef.current.forEach((trailData, botId) => {
-        if (trailData.length > 1) {
-          const points = trailData.slice();
-          const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      if (showTrails) {
+        // Create new trails
+        trailDataRef.current.forEach((trailData, botId) => {
+          if (trailData.length > 1) {
+            const points = trailData.slice();
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
-          // Create gradient material for fading effect
-          const material = new THREE.LineBasicMaterial({
-            color: themeColors.trail,
-            transparent: true,
-            opacity: 0.6,
-          });
+            // Create gradient material for fading effect
+            const material = new THREE.LineBasicMaterial({
+              color: themeColors.trail,
+              transparent: true,
+              opacity: 0.6,
+            });
 
-          const line = new THREE.Line(geometry, material);
-          trailsGroupRef.current!.add(line);
-        }
-      });
+            const line = new THREE.Line(geometry, material);
+            trailsGroupRef.current!.add(line);
+          }
+        });
+      } else {
+        // Clear trail data when trails are disabled
+        trailDataRef.current.clear();
+      }
     }
-  }, [bots, themeColors, showTrails]);
+  }, [bots, themeColors, showTrails, trailLength, botSize]);
 
   // Animation loop
   useEffect(() => {

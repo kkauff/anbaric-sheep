@@ -150,8 +150,13 @@ export class BoidModel implements Model {
     }
   }
 
-  // Speed limiting
+  // Speed limiting with velocity damping to prevent accumulation
   private limitSpeed(boid: Bot): void {
+    // Apply slight damping to prevent velocity accumulation over time
+    const dampingFactor = 0.99;
+    boid.xVel *= dampingFactor;
+    boid.yVel *= dampingFactor;
+
     const speed = Math.sqrt(boid.xVel * boid.xVel + boid.yVel * boid.yVel);
     if (speed > this.speedLimit) {
       boid.xVel = (boid.xVel / speed) * this.speedLimit;
