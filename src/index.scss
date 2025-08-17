@@ -1,0 +1,22 @@
+@use "./variables" as vars;
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: vars.$backgroundColor;
+  color: vars.$textColor;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}

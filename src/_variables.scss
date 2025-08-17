@@ -1,0 +1,57 @@
+/*
+ * Sass variables for Boids application
+ * Using Blueprint.js colors with light/dark mode support
+ */
+
+@use "node_modules/@blueprintjs/core/lib/scss/variables" as bp;
+
+:root {
+  // Light mode colors
+  --accent-color: #{bp.$blue3};
+  --primary-color: #{bp.$dark-gray5};
+  --muted-color: #{bp.$gray1};
+  --divider-color: #{bp.$light-gray2};
+  --background-color: #{bp.$white};
+  --panel-background-color: #{bp.$light-gray5};
+  --header-background-color: #{bp.$light-gray4};
+  --button-background-color: #{bp.$light-gray1};
+  --button-hover-background-color: #{bp.$light-gray3};
+  --input-background-color: #{bp.$white};
+  --text-color: #{bp.$dark-gray1};
+  --border-color: #{bp.$light-gray1};
+  --bot-color: #{bp.$orange3}; // Dark color for light mode
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    // Dark mode colors
+    --accent-color: #{bp.$blue4};
+    --primary-color: #{bp.$light-gray3};
+    --muted-color: #{bp.$gray5};
+    --divider-color: #{bp.$gray2};
+    --background-color: #{bp.$dark-gray3};
+    --panel-background-color: #{bp.$dark-gray2};
+    --header-background-color: #{bp.$dark-gray1};
+    --button-background-color: #{bp.$dark-gray4};
+    --button-hover-background-color: #{bp.$dark-gray5};
+    --input-background-color: #{bp.$dark-gray4};
+    --text-color: #{bp.$light-gray5};
+    --border-color: #{bp.$gray1};
+    --bot-color: #{bp.$orange5}; // Light color for dark mode
+  }
+}
+
+// Export as Sass variables for use in modules
+$accentColor: var(--accent-color);
+$primaryColor: var(--primary-color);
+$mutedColor: var(--muted-color);
+$dividerColor: var(--divider-color);
+$backgroundColor: var(--background-color);
+$panelBackgroundColor: var(--panel-background-color);
+$headerBackgroundColor: var(--header-background-color);
+$buttonBackgroundColor: var(--button-background-color);
+$buttonHoverBackgroundColor: var(--button-hover-background-color);
+$inputBackgroundColor: var(--input-background-color);
+$textColor: var(--text-color);
+$borderColor: var(--border-color);
+$botColor: var(--bot-color);

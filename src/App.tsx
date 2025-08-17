@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import "./App.css";
+import styles from "./App.module.scss";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 import {
@@ -22,7 +22,7 @@ const BoidSvg = ({
   rotation: number;
 }) => (
   <g transform={`translate(${x}, ${y}) rotate(${rotation})`}>
-    <polygon points="-5,-5 10,0 -5,5" fill="brown" />
+    <polygon points="-5,-5 10,0 -5,5" fill="var(--bot-color)" />
   </g>
 );
 
@@ -108,7 +108,9 @@ function App() {
 
   // Track actual SVG dimensions and update boundaries accordingly
   useEffect(() => {
-    const svgElement = document.querySelector(".full-size-svg") as SVGElement;
+    const svgElement = document.querySelector(
+      `.${styles.fullSizeSvg}`
+    ) as SVGElement;
     if (!svgElement) return;
 
     const updateSVGDimensions = () => {
@@ -229,23 +231,23 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className={styles.appContainer}>
       {/* Configuration Panel - Left Side */}
-      <div className="config-panel">
+      <div className={styles.configPanel}>
         <Button
           icon={<Cog />}
           minimal
           onClick={() => setShowConfigPanel(!showConfigPanel)}
-          className="panel-toggle-button"
+          className={styles.panelToggleButton}
           title="Configuration"
         >
           {showConfigPanel && (
-            <span className="panel-label">Configuration</span>
+            <span className={styles.panelLabel}>Configuration</span>
           )}
         </Button>
         <Collapse isOpen={showConfigPanel}>
-          <div className="panel-content">
-            <div className="config-item">
+          <div className={styles.panelContent}>
+            <div className={styles.configItem}>
               <label htmlFor="stepsInput">Steps per second:</label>
               <input
                 type="number"
@@ -254,7 +256,7 @@ function App() {
                 onChange={(e) => setStepsPerSecond(Number(e.target.value))}
               />
             </div>
-            <div className="config-item">
+            <div className={styles.configItem}>
               <label htmlFor="botsInput">Number of bots:</label>
               <input
                 type="number"
@@ -266,10 +268,10 @@ function App() {
               />
             </div>
 
-            <div className="config-section">
+            <div className={styles.configSection}>
               <h4>Behavioral Weights</h4>
 
-              <div className="config-item">
+              <div className={styles.configItem}>
                 <label htmlFor="cohesionSlider">
                   Cohesion (move toward center): {cohesionWeight.toFixed(1)}
                 </label>
@@ -284,7 +286,7 @@ function App() {
                 />
               </div>
 
-              <div className="config-item">
+              <div className={styles.configItem}>
                 <label htmlFor="separationSlider">
                   Separation (avoid others): {separationWeight.toFixed(1)}
                 </label>
@@ -299,7 +301,7 @@ function App() {
                 />
               </div>
 
-              <div className="config-item">
+              <div className={styles.configItem}>
                 <label htmlFor="alignmentSlider">
                   Alignment (match velocities): {alignmentWeight.toFixed(1)}
                 </label>
@@ -319,17 +321,17 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div className="main-content">
-        <header className="header">
-          <h1 className="title">Boids</h1>
-          <div className="control-bar">
+      <div className={styles.mainContent}>
+        <header className={styles.header}>
+          <h1 className={styles.title}>Boids</h1>
+          <div className={styles.controlBar}>
             <button onClick={handleStartStopClick}>
               {isRunning ? "Stop" : "Start"}
             </button>
           </div>
         </header>
-        <div className="grid-container">
-          <svg className="full-size-svg" width="100%" height="100%">
+        <div className={styles.gridContainer}>
+          <svg className={styles.fullSizeSvg} width="100%" height="100%">
             {bots.map((bot) => {
               const x = xScale(bot.xPos);
               const y = yScale(bot.yPos);
@@ -342,19 +344,21 @@ function App() {
       </div>
 
       {/* Position Table Panel - Right Side */}
-      <div className="table-panel">
+      <div className={styles.tablePanel}>
         <Button
           icon={<Th />}
           minimal
           onClick={() => setShowTablePanel(!showTablePanel)}
-          className="panel-toggle-button"
+          className={styles.panelToggleButton}
           title="Position Table"
         >
-          {showTablePanel && <span className="panel-label">Bot Positions</span>}
+          {showTablePanel && (
+            <span className={styles.panelLabel}>Bot Positions</span>
+          )}
         </Button>
         <Collapse isOpen={showTablePanel}>
-          <div className="panel-content">
-            <div className="table-container">
+          <div className={styles.panelContent}>
+            <div className={styles.tableContainer}>
               <table>
                 <thead>
                   <tr>
